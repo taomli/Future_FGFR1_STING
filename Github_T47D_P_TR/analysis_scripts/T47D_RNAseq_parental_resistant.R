@@ -157,7 +157,7 @@ ggsave(paste0(final_plotdir,"T47D TR-T47D vs P-T47D GSEA barplot.pdf"), plot = g
 
 
 ########################################################################
-########## Figure 1D Volcano plot of TR-T47D vs. P-T47D      ########### 
+########## Volcano plot of TR-T47D vs. P-T47D      ########### 
 ########################################################################
 
 # Diffeexpressed cutoff
