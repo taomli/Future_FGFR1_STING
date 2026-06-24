@@ -12,8 +12,6 @@ library(GSVA)
 library(ggsignif)
 library(showtext)
 
-#Hello
-
 # Load a Google font that supports Greek
 font_add_google("Roboto", "roboto")
 showtext_auto()
