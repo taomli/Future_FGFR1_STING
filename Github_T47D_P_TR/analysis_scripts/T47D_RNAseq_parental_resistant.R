@@ -4,27 +4,12 @@ library(msigdbr)
 library(fgsea)
 library(ggrepel)
 library(ggplot2)
-library(scales)
-library(writexl)
-library(corto)
-library(DESeq2)
-library(ComplexHeatmap)
-library(randomForest)
-library(cluster)
-library(RColorBrewer)
-library(colorRamp2)
-library(enrichR)
-library(msigdbr)
 library(dplyr)
-library(tidyr)
-library(grid)
-library(ggtext)
 library(showtext)
 
 ########### Set seed ##############
 
 set.seed(42)
-
 
 # Load a Google font that supports Greek
 font_add_google("Roboto", "roboto")
@@ -32,16 +17,13 @@ showtext_auto()
 
 ## Define figure directory ##
 
-data.dir = "/Volumes/T9/Github_T47D_P_TR/T47D_dds_vds/"
+data.dir = "/Volumes/T9/Github_projects/Future_FGFR1_STING/Github_T47D_P_TR/data/"
 
-final_plotdir = "/Volumes/T9/Github_T47D_P_TR/Final figures/"
+final_plotdir = "/Volumes/T9/Github_T47D_P_TR_figures/Final figures/"
 
-### Read in normalized data (...tr contains only TAM-R)
+### Read in normalized data
 
 dds_cell_line <- readRDS(paste0(data.dir, "T47D_dds_cell_line.RDS"))
-
-coldata_cell_line = as.data.frame(colData(dds_cell_line))
-
 
 #### Generate gene annotation (Ensemble ID, gene symbol, biotype)
 
@@ -54,11 +36,10 @@ protein.coding.genes = as.vector(gene.annot$GENEID[which(gene.annot$GENEBIOTYPE 
 ##################################################################
 
 ### Retrieve HALLMARK gene sets for Homo sapiens from MsigDB (database)
+
 HALLMARK_gene_sets = msigdbr(species = "Homo sapiens", category = "H", subcategory = NULL)
 
 HALLMARK_gene_sets_fgsea = split(x = HALLMARK_gene_sets$ensembl_gene, f = HALLMARK_gene_sets$gs_name)
-
-HALLMARK_gene_sets_symbols_fgsea = split(x = HALLMARK_gene_sets$gene_symbol , f = HALLMARK_gene_sets$gs_name)
 
 #########################################################################################################
 #### Generate character vectors of gene symbols/ensemble IDs within indivudual hallmark gene sets #######
@@ -172,7 +153,7 @@ gsea_plot <- ggplot(df_sig, aes(x = NES, y = reorder(pathway, NES),
   )
 
 
-ggsave(paste0(final_plotdir,"T47D TR-T47D vs P-T47D GSEA barplot.pdf"), plot = gsea_plot, height = 5, width = 5.93, units = "cm")
+ggsave(paste0(final_plotdir,"T47D TR-T47D vs P-T47D GSEA barplot-test.pdf"), plot = gsea_plot, height = 5, width = 5.93, units = "cm")
 
 
 ########################################################################
@@ -222,7 +203,7 @@ DOI$delabel[DOI$log2FoldChange < label.logcutoff1 & DOI$padj < label.pcutoff & !
 DOI$alpha <- 1
 DOI$alpha[!is.na(DOI$GSOI) & DOI$diffexpressed != "NO"] <- 2
 
-vol.DOI <- ggplot(data = DOI, aes(x = log2FoldChange, y = as.numeric(-log10(padj)), label = delabel)) +
+vol.DOI <- ggplot(data = DOI, aes(x = log2FoldChange, y = -log10(padj), label = delabel)) +
   ggtitle("TR-T47D vs. P-T47D") +
   ylab("-log10(FDR)") + 
   xlab("log2FoldChange") +
