@@ -15,10 +15,6 @@ library(showtext)
 font_add_google("Roboto", "roboto")
 showtext_auto()
 
-### Load color schemes ####
-
-#colour.df <- read.table("/Users/torbjo2503/Desktop/PhD/2024 IFN paper/colour schemes.txt", header = TRUE, sep = " ")
-
 ## Define figure directory ##
 
 data.dir = "/Volumes/T9/Github_T47D_P_TR/T47D_dds_vds/"
