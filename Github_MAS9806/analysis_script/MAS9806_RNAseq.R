@@ -1,16 +1,15 @@
 library(DESeq2)
 library(EnsDb.Hsapiens.v86)
-library(msigdbr)
 library(fgsea)
 library(ggrepel)
 library(ggplot2)
-library(scales)
 library(msigdbr)
 library(dplyr)
-library(stringr)
-library(GSVA)
-library(ggsignif)
 library(showtext)
+
+########### Set seed ##############
+
+set.seed(42)
 
 # Load a Google font that supports Greek
 font_add_google("Roboto", "roboto")
@@ -18,32 +17,17 @@ showtext_auto()
 
 ## Define figure directory ##
 
-final.data.dir = "/Volumes/T9/Github_MAS9806/MAS9806_RNAseq_dds/"
+final.data.dir = "/Volumes/T9/Github_projects/Future_FGFR1_STING/Github_MAS9806/data/"
 
-final_plotdir = "/Volumes/T9/Github_MAS9806/Final figures/"
+final_plotdir = "/Volumes/T9/Github_MAS9806_figures/Final figures/"
 
-supp_plotdir = "/Volumes/T9/Github_MAS9806/Final supplementary figures/"
+supp_plotdir = "/Volumes/T9/Github_MAS9806_figures/Final supplementary figures/"
 
-supp_tabledir = "/Volumes/T9/Github_MAS9806/Final supplementary tables/"
+supp_tabledir = "/Volumes/T9/Github_MAS9806_figures/Final supplementary tables/"
 
-### Read in normalized data (...tr contains only TAM-R)
+### Read in normalized data 
 
-dds <- readRDS(paste0(final.data.dir, "MAS98.06_dds.RDS")) 
-vsd <- readRDS(paste0(final.data.dir, "MAS98.06_vsd.RDS"))
-
-# meta
-
-meta = colData(dds)
-
-########### Set seed ##############
-
-set.seed(42)
-
-######################################################
-######## 0.0 Define various functions #################
-######################################################
-
-function (x, table) is.na(match(x, table, nomatch=NA_integer_))
+dds <- readRDS(paste0(final.data.dir, "MAS98.06_dds.RDS")) ## Script for dds/vsd files are in Final data/MAS9806_RNAseq/
 
 #### Generate gene annotation (Ensemble ID, gene symbol, biotype)
 
@@ -61,7 +45,6 @@ HALLMARK_gene_sets = msigdbr(species = "Homo sapiens", category = "H", subcatego
 
 HALLMARK_gene_sets_fgsea = split(x = HALLMARK_gene_sets$ensembl_gene, f = HALLMARK_gene_sets$gs_name)
 
-
 #########################################################################################################
 #### Generate character vectors of gene symbols/ensemble IDs within indivudual hallmark gene sets #######
 #########################################################################################################
@@ -71,23 +54,9 @@ hallmark.IFNA.genes = HALLMARK_gene_sets$gene_symbol[HALLMARK_gene_sets$gs_name 
 hallmark.IFNG.genes = HALLMARK_gene_sets$gene_symbol[HALLMARK_gene_sets$gs_name =="HALLMARK_INTERFERON_GAMMA_RESPONSE"]
 hallmark.IFN.genes = union(hallmark.IFNA.genes,hallmark.IFNG.genes)
 
-# Hallmark Interferon response alpha/gamma
-hallmark.IFNA.ensemble = HALLMARK_gene_sets$ensembl_gene[HALLMARK_gene_sets$gs_name =="HALLMARK_INTERFERON_ALPHA_RESPONSE"]
-hallmark.IFNG.ensemble = HALLMARK_gene_sets$ensembl_gene[HALLMARK_gene_sets$gs_name =="HALLMARK_INTERFERON_GAMMA_RESPONSE"]
-hallmark.IFN.ensemble = union(hallmark.IFNA.ensemble,hallmark.IFNG.ensemble)
-
-TISG = c("OAS1", "OAS3", "OAS2", "STAT1", "XAF1", 
-         "RSAD2", "DDX60", "IFI44", "PARP9", "HERC6", "MX1", "DTX3L", 
-         "IFI27", "IFIT1", "PLSCR1", "SAMHD1", "B2M")
-
-TISG.ensemble = gene.annot$GENEID[gene.annot$SYMBOL %in% TISG]
-
 ###################################################################
 #### 2 Result tables (DGEA) #####################################
 ###################################################################
-
-# Subset dds for protein coding genes
-dds_pc <- dds[rownames(dds) %in% protein.coding.genes, ]
 
 dgea.list <- list()
 cont.list <- list()
@@ -98,12 +67,13 @@ cont.list[["ERD.CTR"]] <- c("treatment", "ERD", "CTR")
 cont.list[["TE.CTR"]]  <- c("treatment", "TE",  "CTR")
 cont.list[["TE.TAM"]]  <- c("treatment", "TE",  "TAM")
 cont.list[["TE.ERD"]]  <- c("treatment", "TE",  "ERD")
+cont.list[["TAM.ERD"]] <- c("treatment", "TAM", "ERD")
 
 # Iterate through contrasts and compute results
 for (name in names(cont.list)) {
   
   # Filter based on protein-coding genes
-  res <- results(dds_pc, contrast = cont.list[[name]])
+  res <- results(dds[rownames(dds) %in% protein.coding.genes, ], cont.list[[name]])
   
   # Convert to data frame and add gene symbols
   res <- as.data.frame(res)
@@ -132,21 +102,14 @@ for(i in 1:length(dgea.list)){
 
 ### Generate list of GSEA result tables
 
-gsea.hallmark = list()
-gsea.kegg = list()
-gsea.reactome = list()
-gsea.gobp = list()
-
-gsea.list = list(gsea.hallmark, gsea.kegg, gsea.reactome, gsea.gobp)
-
-names(gsea.list) = c("HALLMARK","KEGG","REACTOME", "GOBP")
+HALLMARK_gsea_list = list()
 
 
 # Run fgsea enrichment analysis for HALLMARK genes (remember to double check comparison)
 pathways = HALLMARK_gene_sets_fgsea
 
 for(i in 1:length(dgea.list)){
-  gsea.list[["HALLMARK"]][[i]] <- fgseaMultilevel(
+  HALLMARK_gsea_list[[i]] <- fgseaMultilevel(
     pathways = pathways,
     stats = ranked_gene_list[[i]],
     eps = 0,
@@ -154,21 +117,21 @@ for(i in 1:length(dgea.list)){
   )
 }
 
-names(gsea.list[["HALLMARK"]]) <- gsub("dgea\\.","hallmark.", names(dgea.list))
+names(HALLMARK_gsea_list) <- gsub("dgea\\.","hallmark.", names(dgea.list))
 
 ##########################################################################################
 #################################### 2025 IFN paper figures     ###########################
 ##########################################################################################
 
-make_gsea_plot <- function(hallmark_df, plot_title, file_path) {
+make_fixed_element_gsea_plot <- function(gsea_df, plot_title, file_path) {
   
   
   # Clean and format pathway names
-  hallmark_df$pathway <- gsub("_", " ", gsub("HALLMARK_", "", hallmark_df$pathway))
-  hallmark_df$pathway <- toupper(hallmark_df$pathway)
+  gsea_df$pathway <- gsub("_", " ", gsub("HALLMARK_", "", gsea_df$pathway))
+  gsea_df$pathway <- toupper(gsea_df$pathway)
   
   # Filter for significant pathways (padj < 0.05)
-  df_sig <- hallmark_df %>% filter(padj < 0.05)
+  df_sig <- gsea_df %>% filter(padj < 0.05)
   if (nrow(df_sig) == 0) {
     warning("No significant pathways (padj < 0.05), skipping plot.")
     return(NULL)
@@ -247,33 +210,22 @@ make_gsea_plot <- function(hallmark_df, plot_title, file_path) {
 ######### GSEA barplots ##############
 
 # TAM vs. CTR
-
-make_gsea_plot(
-  hallmark_df = gsea.list$HALLMARK$hallmark.TAM.CTR,
+make_fixed_element_gsea_plot(
+  gsea_df = HALLMARK_gsea_list$hallmark.TAM.CTR,
   plot_title = "tamoxifen vs. control",
   file_path = paste0(final_plotdir, "MAS9806 tamoxifen vs. control GSEA barplot.pdf")
 )
 
 # ERD vs. CTR
-
-make_gsea_plot(
-  hallmark_df = gsea.list$HALLMARK$hallmark.ERD.CTR,
+make_fixed_element_gsea_plot(
+  gsea_df = HALLMARK_gsea_list$hallmark.ERD.CTR,
   plot_title = "erdafitinib vs. control",
   file_path = paste0(final_plotdir, "MAS9806 erdafitinib vs. control GSEA barplot.pdf")
 )
 
-# TE vs. ERD
-
-make_gsea_plot(
-  hallmark_df = gsea.list$HALLMARK$hallmark.TE.ERD,
-  plot_title = "tamoxifen + erdafitinib vs. erdafitinib",
-  file_path = paste0(supp_plotdir, "MAS9806 tamoxifen + erdafitinib vs. erdafitinib GSEA barplot.pdf")
-)
-
 # TE vs. TAM
-
-make_gsea_plot(
-  hallmark_df = gsea.list$HALLMARK$hallmark.TE.ERD,
+make_fixed_element_gsea_plot(
+  gsea_df = HALLMARK_gsea_list$hallmark.TE.TAM,
   plot_title = "tamoxifen + erdafitinib vs. tamoxifen",
   file_path = paste0(final_plotdir, "MAS9806 tamoxifen + erdafitinib vs. tamoxifen GSEA barplot.pdf")
 )
@@ -295,7 +247,7 @@ plot_volcano_highlight_geneset <- function(
     label_logcutoff1 = 0,
     label_logcutoff2 = 0,
     highlight_color = "#F28E2B",
-    geneset_label = "Highlighted genes"  
+    geneset_label = "Highlighted genes"  # NEW ARGUMENT
 ) {
   
   df <- dgea_df
@@ -375,44 +327,32 @@ plot_volcano_highlight_geneset <- function(
   return(p)
 }
 
-## Volcano plots of various comparisons
-
-# FGFR1 and tamoxifen associated ISGs, + FGFR1 and TMEM173
+## Volcano plots of various comparisons highlighting IFN response genes
 
 plot_volcano_highlight_geneset(
   dgea_df = dgea.list$dgea.ERD.CTR,
-  geneset = TISG,
-  geneset_label = "T-ISGs",
+  geneset = hallmark.IFN.genes,
+  geneset_label = "IFN response genes",
   output_file = paste0(final_plotdir, "MAS98.06 erdafitinib vs. control volcano plot.pdf")
 )
 
 plot_volcano_highlight_geneset(
   dgea_df = dgea.list$dgea.TAM.CTR,
-  geneset = TISG,
-  geneset_label = "T-ISGs",
-  output_file = paste0(final_plotdir, "MAS98.06 Tamoxifen vs. control volcano plot.pdf")
-)
-
-plot_volcano_highlight_geneset(
-  dgea_df = dgea.list$dgea.TE.ERD,
-  geneset = TISG,
-  geneset_label = "T-ISGs",
-  output_file = paste0(supp_plotdir, "MAS98.06 Tamoxifen + erdafitinib vs. erdafitinib volcano plot.pdf")
+  geneset = hallmark.IFN.genes,
+  geneset_label = "IFN response genes",
+  output_file = paste0(final_plotdir, "MAS98.06 tamoxifen vs. control volcano plot test.pdf")
 )
 
 plot_volcano_highlight_geneset(
   dgea_df = dgea.list$dgea.TE.TAM,
-  geneset = TISG,
-  geneset_label = "T-ISGs",
-  output_file = paste0(final_plotdir, "MAS98.06 Tamoxifen + erdafitinib vs. Tamoxifen volcano plot.pdf")
+  geneset = hallmark.IFN.genes,
+  geneset_label = "IFN response genes",
+  output_file = paste0(final_plotdir, "MAS98.06 tamoxifen + erdafitinib vs. tamoxifen volcano plot.pdf")
 )
-
 
 ##########################################
 ## Volcano plot of FGFR1 + STING #########
 ##########################################
-
-
 
 plot_volcano_custom_highlight <- function(
     dgea_df,
@@ -420,10 +360,16 @@ plot_volcano_custom_highlight <- function(
     highlight_colors = NULL, # Named vector: names are gene symbols, values are custom colors
     plot_title = "Volcano Plot",
     output_file = NULL,
-    vul_pcutoff = 0.05
+    vul_pcutoff = 0.05,
+    vul_logcutoff1 = 0,
+    vul_logcutoff2 = 0
 ) {
-  
   df <- dgea_df
+  
+  # Differential expression classification
+  df$diffexpressed <- "NO"
+  df$diffexpressed[df$log2FoldChange > vul_logcutoff2 & df$padj < vul_pcutoff] <- "UP"
+  df$diffexpressed[df$log2FoldChange < vul_logcutoff1 & df$padj < vul_pcutoff] <- "DOWN"
   
   # Label column
   df$label <- NA
@@ -434,7 +380,8 @@ plot_volcano_custom_highlight <- function(
   # Alpha and color columns
   df$highlight <- ifelse(df$SYMBOL %in% names(highlight_genes), "highlight", "background")
   df$alpha <- ifelse(df$highlight == "highlight", 2, 1)
-
+  df$color <- ifelse(df$SYMBOL %in% names(highlight_colors), highlight_colors[df$SYMBOL], "#E0E0E0")
+  
   # Plot
   p <- ggplot(df, aes(x = log2FoldChange, y = -log10(padj), label = label)) +
     ggtitle(plot_title) +
@@ -498,82 +445,6 @@ plot_volcano_custom_highlight(
   output_file = paste0(supp_plotdir, "MAS98.06 tamoxifen vs. control volcano plot_FGFR1_STING.pdf")
 )
 
-
-
-########## ssGSEA analysis #################
-
-#--- 1. Prepare: Utilities ---------------------------------------------------#
-p_to_stars <- function(p) {
-  if (p < 0.001) return("***")
-  if (p < 0.01) return("**")
-  if (p < 0.05) return("*")
-  return("NS")
-}
-
-#--- 2. Run ssGSEA -----------------------------------------------------------#
-vst_matrix <- assay(vsd)
-custom_gene_set <- list(TISG = TISG.ensemble)
-ssgsea_scores <- gsva(ssgseaParam(vst_matrix, custom_gene_set))
-
-#--- 3. Prepare metadata and plot data ---------------------------------------#
-plotdata <- cbind(meta, t(ssgsea_scores)[rownames(meta), , drop = FALSE])
-plotdata$treatment <- factor(plotdata$treatment, levels = c("CTR", "TAM", "ERD", "TE"))
-
-#--- 4. Statistics for annotation --------------------------------------------#
-comparisons <- list(c("CTR", "TAM"), c("CTR", "ERD"), c("ERD", "TE"), c("TE", "TAM"), c("CTR","TE"))
-names(comparisons) <- sapply(comparisons, function(x) paste(x, collapse = "_vs_"))
-
-p_values <- sapply(comparisons, function(x) {
-  t.test(
-    plotdata[["TISG"]][plotdata$treatment == x[1]],
-    plotdata[["TISG"]][plotdata$treatment == x[2]],
-    var.equal = FALSE  # Welch's t-test
-  )$p.value
-})
-
-p_adj_values <- p.adjust(p_values, method = "BH")
-
-signif_annotations <- sapply(p_adj_values, p_to_stars)
-y_positions <- c(1.3, 1.4, 1.5, 1.6, 1.7)  # Matching order of comparisons
-
-#--- 5. Plot aesthetics ------------------------------------------------------#
-manual_colors <- c("CTR" = "#A0CBE8", "TAM" = "#F1CE63", "ERD" = "#8CD17D", "TE" = "#E15759")
-custom_labels <- c("CTR" = "Control", "TAM" = "Tamoxifen", "ERD" = "Erdafitinib", "TE" = "Tamoxifen +\nerdafitinib")
-
-#--- 6. Plot generation ------------------------------------------------------#
-
-plot <- ggplot(plotdata, aes(x = treatment, y = TISG, fill = treatment)) +
-  geom_boxplot(outlier.shape = NA, color = "black", size = 0.2) +
-  geom_jitter(width = 0.2, size = 0.3, color = "black") +
-  geom_signif(comparisons = comparisons,
-              annotations = signif_annotations,
-              y_position = y_positions,
-              tip_length = 0.01,
-              vjust = 0,
-              textsize = 6 / 2.835,
-              map_signif_level = FALSE,
-              size = 0.2) +
-  scale_y_continuous(limits = c(0.5,1.8))+
-  scale_x_discrete(labels = custom_labels) +
-  scale_fill_manual(values = manual_colors) +
-  labs(x = NULL, y = "ssGSEA Enrichment Score (T-ISG signature)") +
-  theme_bw() +
-  theme(
-    axis.text.x = element_text(angle = 30, vjust = 0.5, color = "black", size = 6),
-    axis.text.y = element_text(color = "black", size = 6),
-    axis.title.y = element_text(size = 6),
-    legend.position = "none",
-    plot.margin = unit(c(0.4, 0.2, 0.2, 0.4), "cm"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-  )
-
-#--- 8. Save ------------------------------------------------------------------#
-ggsave(filename = file.path(final_plotdir, "MAS98.06_all_treatments_ssGSEA_TISG_boxplot.pdf"),
-       plot = plot, width = 5.926, height = 5.5, units = "cm")
-
-
-
 ############################################################
 ###### Supplementary tables for all DGEA comparisons #######
 ############################################################
@@ -583,12 +454,12 @@ library(openxlsx)
 
 # Define name mapping
 sheet_name_map <- c(
-  "dgea.TAM.CTR" = "Tamoxifen vs. Vehicle",
+  "dgea.TAM.CTR" = "tamoxifen vs. Vehicle",
   "dgea.ERD.CTR" = "Erdafitinib vs. Vehicle",
-  "dgea.TE.CTR"  = "Tamoxifen+Erd vs. Vehicle",
-  "dgea.TE.TAM"  = "Tamoxifen+Erd vs. Tamoxifen",
-  "dgea.TE.ERD"  = "Tamoxifen+Erd vs. Erdafitinib",
-  "dgea.TAM.ERD" = "Tamoxifen vs. Erdafitinib"
+  "dgea.TE.CTR"  = "tamoxifen+Erd vs. Vehicle",
+  "dgea.TE.TAM"  = "tamoxifen+Erd vs. tamoxifen",
+  "dgea.TE.ERD"  = "tamoxifen+Erd vs. Erdafitinib",
+  "dgea.TAM.ERD" = "tamoxifen vs. Erdafitinib"
 )
 
 # Create a new workbook
@@ -618,21 +489,21 @@ cat("Workbook saved to:", output_path, "\n")
 
 # Define sheet name mapping
 gsea_sheet_map <- c(
-  "hallmark.TAM.CTR" = "Tamoxifen vs. Vehicle",
+  "hallmark.TAM.CTR" = "tamoxifen vs. Vehicle",
   "hallmark.ERD.CTR" = "Erdafitinib vs. Vehicle",
-  "hallmark.TE.CTR"  = "Tamoxifen+Erd vs. Vehicle",
-  "hallmark.TE.TAM"  = "Tamoxifen+Erd vs. Tamoxifen",
-  "hallmark.TE.ERD"  = "Tamoxifen+Erd vs. Erdafitinib",
-  "hallmark.TAM.ERD" = "Tamoxifen vs. Erdafitinib"
+  "hallmark.TE.CTR"  = "tamoxifen+Erd vs. Vehicle",
+  "hallmark.TE.TAM"  = "tamoxifen+Erd vs. tamoxifen",
+  "hallmark.TE.ERD"  = "tamoxifen+Erd vs. Erdafitinib",
+  "hallmark.TAM.ERD" = "tamoxifen vs. Erdafitinib"
 )
 
 # Create a new workbook
 wb <- createWorkbook()
 
 # Loop through GSEA results and write to workbook
-for (name in names(gsea.list$HALLMARK)) {
+for (name in names(HALLMARK_gsea_list)) {
   sheet_label <- gsea_sheet_map[[name]]
-  gsea_table <- gsea.list$HALLMARK[[name]] %>%
+  gsea_table <- HALLMARK_gsea_list[[name]] %>%
     arrange(padj)  # sort by adjusted p-value
   addWorksheet(wb, sheetName = sheet_label)
   writeData(wb, sheet = sheet_label, x = gsea_table)
