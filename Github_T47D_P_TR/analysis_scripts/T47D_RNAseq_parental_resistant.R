@@ -153,7 +153,7 @@ gsea_plot <- ggplot(df_sig, aes(x = NES, y = reorder(pathway, NES),
   )
 
 
-ggsave(paste0(final_plotdir,"T47D TR-T47D vs P-T47D GSEA barplot-test.pdf"), plot = gsea_plot, height = 5, width = 5.93, units = "cm")
+ggsave(paste0(final_plotdir,"T47D TR-T47D vs P-T47D GSEA barplot.pdf"), plot = gsea_plot, height = 5, width = 5.93, units = "cm")
 
 
 ########################################################################
