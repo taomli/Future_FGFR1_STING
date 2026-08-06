@@ -23,11 +23,9 @@ final_plotdir = "/Volumes/T9/Github_MAS9806_figures/Final figures/"
 
 supp_plotdir = "/Volumes/T9/Github_MAS9806_figures/Final supplementary figures/"
 
-supp_tabledir = "/Volumes/T9/Github_MAS9806_figures/Final supplementary tables/"
-
 ### Read in normalized data 
 
-dds <- readRDS(paste0(final.data.dir, "MAS98.06_dds.RDS")) ## Script for dds/vsd files are in Final data/MAS9806_RNAseq/
+dds <- readRDS(paste0(final.data.dir, "MAS98.06_dds.RDS"))
 
 #### Generate gene annotation (Ensemble ID, gene symbol, biotype)
 
@@ -37,7 +35,7 @@ protein.coding.genes = as.vector(gene.annot$GENEID[which(gene.annot$GENEBIOTYPE 
 
 
 ##################################################################
-##### Retrieve and list Hallmark, Kegg, and Reactome gene sets ###
+##### Retrieve and list Hallmark gene sets ###
 ##################################################################
 
 ### Retrieve HALLMARK gene sets for Homo sapiens from MsigDB (database)
@@ -213,21 +211,21 @@ make_fixed_element_gsea_plot <- function(gsea_df, plot_title, file_path) {
 make_fixed_element_gsea_plot(
   gsea_df = HALLMARK_gsea_list$hallmark.TAM.CTR,
   plot_title = "tamoxifen vs. control",
-  file_path = paste0(final_plotdir, "MAS9806 tamoxifen vs. control GSEA barplot.pdf")
+  file_path = paste0(final_plotdir, "Fig 4C (MAS9806 tamoxifen vs. control GSEA barplot).pdf")
 )
 
 # ERD vs. CTR
 make_fixed_element_gsea_plot(
   gsea_df = HALLMARK_gsea_list$hallmark.ERD.CTR,
   plot_title = "erdafitinib vs. control",
-  file_path = paste0(final_plotdir, "MAS9806 erdafitinib vs. control GSEA barplot.pdf")
+  file_path = paste0(final_plotdir, "Fig 4E (MAS9806 erdafitinib vs. control GSEA barplot).pdf")
 )
 
 # TE vs. TAM
 make_fixed_element_gsea_plot(
   gsea_df = HALLMARK_gsea_list$hallmark.TE.TAM,
   plot_title = "tamoxifen + erdafitinib vs. tamoxifen",
-  file_path = paste0(final_plotdir, "MAS9806 tamoxifen + erdafitinib vs. tamoxifen GSEA barplot.pdf")
+  file_path = paste0(final_plotdir, "Fig 4G (MAS9806 tamoxifen + erdafitinib vs. tamoxifen GSEA barplot).pdf")
 )
 
 ##########################################################################################
@@ -290,7 +288,7 @@ plot_volcano_highlight_geneset <- function(
     
     # Axis scales
     scale_alpha(range = c(0.5, 0.9)) +
-    scale_y_continuous(trans = "log1p") +
+    scale_y_continuous(trans = "log1p", breaks = c(0, 2, 5, 10, 20, 30, 50, 100, 200)) +
     scale_x_continuous() +
     scale_color_manual(values = setNames(highlight_color, geneset_label)) +
     
@@ -333,21 +331,21 @@ plot_volcano_highlight_geneset(
   dgea_df = dgea.list$dgea.ERD.CTR,
   geneset = hallmark.IFN.genes,
   geneset_label = "IFN response genes",
-  output_file = paste0(final_plotdir, "MAS98.06 erdafitinib vs. control volcano plot.pdf")
+  output_file = paste0(final_plotdir, "Fig 4F (MAS98.06 erdafitinib vs. control volcano plot).pdf")
 )
 
 plot_volcano_highlight_geneset(
   dgea_df = dgea.list$dgea.TAM.CTR,
   geneset = hallmark.IFN.genes,
   geneset_label = "IFN response genes",
-  output_file = paste0(final_plotdir, "MAS98.06 tamoxifen vs. control volcano plot test.pdf")
+  output_file = paste0(final_plotdir, "Fig 4D (MAS98.06 tamoxifen vs. control volcano plot).pdf")
 )
 
 plot_volcano_highlight_geneset(
   dgea_df = dgea.list$dgea.TE.TAM,
   geneset = hallmark.IFN.genes,
   geneset_label = "IFN response genes",
-  output_file = paste0(final_plotdir, "MAS98.06 tamoxifen + erdafitinib vs. tamoxifen volcano plot.pdf")
+  output_file = paste0(final_plotdir, "Fig 4H (MAS98.06 tamoxifen + erdafitinib vs. tamoxifen volcano plot).pdf")
 )
 
 ##########################################
@@ -356,8 +354,8 @@ plot_volcano_highlight_geneset(
 
 plot_volcano_custom_highlight <- function(
     dgea_df,
-    highlight_genes = NULL,  # Named vector: names are gene symbols, values are custom labels
-    highlight_colors = NULL, # Named vector: names are gene symbols, values are custom colors
+    highlight_genes = NULL,  
+    highlight_colors = NULL, 
     plot_title = "Volcano Plot",
     output_file = NULL,
     vul_pcutoff = 0.05,
@@ -442,80 +440,5 @@ plot_volcano_custom_highlight(
   dgea_df = dgea.list$dgea.TAM.CTR,
   highlight_genes = highlight_genes,
   highlight_colors = highlight_colors,
-  output_file = paste0(supp_plotdir, "MAS98.06 tamoxifen vs. control volcano plot_FGFR1_STING.pdf")
+  output_file = paste0(supp_plotdir, "Fig S4E (MAS98.06 tamoxifen vs. control volcano plot_FGFR1_STING).pdf")
 )
-
-############################################################
-###### Supplementary tables for all DGEA comparisons #######
-############################################################
-
-# Load required package
-library(openxlsx)
-
-# Define name mapping
-sheet_name_map <- c(
-  "dgea.TAM.CTR" = "tamoxifen vs. Vehicle",
-  "dgea.ERD.CTR" = "Erdafitinib vs. Vehicle",
-  "dgea.TE.CTR"  = "tamoxifen+Erd vs. Vehicle",
-  "dgea.TE.TAM"  = "tamoxifen+Erd vs. tamoxifen",
-  "dgea.TE.ERD"  = "tamoxifen+Erd vs. Erdafitinib",
-  "dgea.TAM.ERD" = "tamoxifen vs. Erdafitinib"
-)
-
-# Create a new workbook
-wb <- createWorkbook()
-
-# Loop and write each DGEA result with sorting
-for (name in names(dgea.list)) {
-  sheet_label <- sheet_name_map[[name]]
-  dgea_table <- dgea.list[[name]] %>%
-    arrange(padj)  # sort by adjusted p-value
-  addWorksheet(wb, sheetName = sheet_label)
-  writeData(wb, sheet = sheet_label, x = dgea_table)
-}
-
-# Define output path
-output_path <- file.path(supp_tabledir, "MAS98.06_DGEA_results_all_comparisons.xlsx")
-
-# Save the workbook
-saveWorkbook(wb, file = output_path, overwrite = TRUE)
-
-# Confirmation
-cat("Workbook saved to:", output_path, "\n")
-
-#####################################################################
-###### Supplementary tables for all Hallmark GSEA comparisons #######
-#####################################################################
-
-# Define sheet name mapping
-gsea_sheet_map <- c(
-  "hallmark.TAM.CTR" = "tamoxifen vs. Vehicle",
-  "hallmark.ERD.CTR" = "Erdafitinib vs. Vehicle",
-  "hallmark.TE.CTR"  = "tamoxifen+Erd vs. Vehicle",
-  "hallmark.TE.TAM"  = "tamoxifen+Erd vs. tamoxifen",
-  "hallmark.TE.ERD"  = "tamoxifen+Erd vs. Erdafitinib",
-  "hallmark.TAM.ERD" = "tamoxifen vs. Erdafitinib"
-)
-
-# Create a new workbook
-wb <- createWorkbook()
-
-# Loop through GSEA results and write to workbook
-for (name in names(HALLMARK_gsea_list)) {
-  sheet_label <- gsea_sheet_map[[name]]
-  gsea_table <- HALLMARK_gsea_list[[name]] %>%
-    arrange(padj)  # sort by adjusted p-value
-  addWorksheet(wb, sheetName = sheet_label)
-  writeData(wb, sheet = sheet_label, x = gsea_table)
-}
-
-# Define output path
-output_path <- file.path(supp_tabledir, "MAS98.06_HALLMARK_GSEA_results.xlsx")
-
-# Save the workbook
-saveWorkbook(wb, file = output_path, overwrite = TRUE)
-
-# Confirmation
-cat("Workbook saved to:", output_path, "\n")
-
-
