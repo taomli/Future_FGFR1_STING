@@ -1,11 +1,9 @@
-library(stringr)
 library(DESeq2)
 library(EnsDb.Hsapiens.v86)
 library(msigdbr)
 library(fgsea)
 library(ggrepel)
 library(ggplot2)
-library(GSVA)
 library(ggsignif)  
 library(dplyr)
 library(rlang)
@@ -17,18 +15,15 @@ showtext_auto()
 
 ## Define figure directory ##
 
-data.dir = "/Volumes/T9/Github_T47D_P_TR/T47D_dds_vds/"
+data.dir = "/Volumes/T9/Github_projects/FUTURE_FGFR1_STING/Github_T47D_P_TR/data/"
 
-final_plotdir = "/Volumes/T9/Github_T47D_P_TR/Final figures/"
+final_plotdir = "/Volumes/T9/Github_T47D_P_TR_figures/Final figures/"
 
-supp_plotdir = "/Volumes/T9/Github_T47D_P_TR/Final supplementary figures/"
+supp_plotdir = "/Volumes/T9/Github_T47D_P_TR_figures/Final supplementary figures/"
 
-supp_tabledir = "/Volumes/T9/Github_T47D_P_TR/Final supplementary tables/"
-
-### Read in normalized data (...tr contains only TAM-R treatments)
+### Read in normalized data 
 
 dds_treatment <- readRDS(paste0(data.dir, "T47D_dds_treatment.RDS"))
-vsd_treatment <- readRDS(paste0(data.dir, "T47D_vsd_treatment.RDS"))
 
 coldata_treatments = as.data.frame(colData(dds_treatment))
 
@@ -63,9 +58,6 @@ hallmark.IFN.genes = union(hallmark.IFNA.genes,hallmark.IFNG.genes)
 hallmark.IFNA.ensemble = HALLMARK_gene_sets$ensembl_gene[HALLMARK_gene_sets$gs_name =="HALLMARK_INTERFERON_ALPHA_RESPONSE"]
 hallmark.IFNG.ensemble = HALLMARK_gene_sets$ensembl_gene[HALLMARK_gene_sets$gs_name =="HALLMARK_INTERFERON_GAMMA_RESPONSE"]
 hallmark.IFN.ensemble = union(hallmark.IFNA.ensemble,hallmark.IFNG.ensemble)
-
-TISG.genes = c("SAMHD1","OAS1","OAS2","OAS3","DDX60","XAF1","IFI27","IFI44","PLSCR1","HERC6","PARP9","RSAD2","IFIT1","STAT1","MX1","DTX3L","B2M")
-TISG.ensemble = gene.annot$GENEID[gene.annot$SYMBOL %in% TISG.genes]
 
 ###################################################################
 #### 2 Result tables (DGEA) #####################################
@@ -234,33 +226,19 @@ make_fixed_element_gsea_plot <- function(hallmark_df, plot_title, file_path) {
 
 ######### GSEA barplots ##############
 
-# TAM vs. CTR
-make_fixed_element_gsea_plot(
-  hallmark_df = gsea.list$HALLMARK$hallmark.TAM.CTR,
-  plot_title = "tamoxifen vs. control",
-  file_path = paste0(supp_plotdir, "TR-T47D tamoxifen vs. control GSEA barplot.pdf")
-)
-
 # ERD vs. CTR
 make_fixed_element_gsea_plot(
   hallmark_df = gsea.list$HALLMARK$hallmark.ERD.CTR,
   plot_title = "erdafitinib vs. control",
-  file_path = paste0(final_plotdir, "TR-T47D erdafitinib vs. control GSEA barplot.pdf")
+  file_path = paste0(final_plotdir, "Fig 2C (TR-T47D erdafitinib vs. control GSEA barplot).pdf")
 )
 
 # TE vs. ERD
 make_fixed_element_gsea_plot(
   hallmark_df = gsea.list$HALLMARK$hallmark.TE.ERD,
   plot_title = "tamoxifen + erdafitinib vs. erdafitinib",
-  file_path = paste0(final_plotdir, "TR-T47D tamoxifen + erdafitinib vs. erdafitinib GSEA barplot.pdf")
+  file_path = paste0(final_plotdir, "Fig 2E (TR-T47D tamoxifen + erdafitinib vs. erdafitinib GSEA barplot).pdf")
 )
-
-# TE vs. TAM
-#make_fixed_element_gsea_plot(
-  #hallmark_df = gsea.list$HALLMARK$hallmark.TE.TAM,
- # plot_title = "tamoxifen + erdafitinib vs. tamoxifen",
- # file_path = paste0(supp_plotdir, "TR-T47D tamoxifen + erdafitinib vs. tamoxifen GSEA barplot.pdf")
-#)
 
 
 ############################################################################
@@ -367,220 +345,20 @@ plot_volcano_highlight_geneset(
   dgea_df = dgea.list$dgea.ERD.CTR,
   geneset = hallmark.IFN.genes,
   plot_title = "erdafitinib vs. control",
-  output_file = paste0(final_plotdir, "TR-T47D erdafitinib vs. control volcano plot.pdf")
+  output_file = paste0(final_plotdir, "Fig 2D (TR-T47D erdafitinib vs. control volcano plot).pdf")
 )
 
 plot_volcano_highlight_geneset(
   dgea_df = dgea.list$dgea.TAM.CTR,
   geneset = hallmark.IFN.genes,
   plot_title = "4-OHT vs. control",
-  output_file = paste0(supp_plotdir, "TR-T47D 4-OHT vs. control volcano plot.pdf")
+  output_file = paste0(supp_plotdir, "Fig S2E (TR-T47D 4-OHT vs. control volcano plot).pdf")
 )
 
 plot_volcano_highlight_geneset(
   dgea_df = dgea.list$dgea.TE.ERD,
   geneset = hallmark.IFN.genes,
   plot_title = "4-OHT + erdafitinib vs. erdafitinib",
-  output_file = paste0(final_plotdir, "TR-T47D 4-OHT + erdafitinib vs. erdafitinib volcano plot.pdf")
+  output_file = paste0(final_plotdir, "Fig 2F (TR-T47D 4-OHT + erdafitinib vs. erdafitinib volcano plot).pdf")
 )
-
-#plot_volcano_highlight_geneset(
- # dgea_df = dgea.list$dgea.TE.TAM,
- # geneset = hallmark.IFN.genes,
- # plot_title = "4-OHT + erdafitinib vs. 4-OHT",
-#  output_file = paste0(supp_plotdir, "TR-T47D 4-OHT + erdafitinib vs. 4-OHT volcano plot.pdf")
-#)
-
-
-
-
-########## ssGSEA analysis #################
-
-#--- 1. Prepare: Utilities ---------------------------------------------------#
-p_to_stars <- function(p) {
-  if (p < 0.001) return("***")
-  if (p < 0.01) return("**")
-  if (p < 0.05) return("*")
-  return("NS")
-}
-
-#--- 2. Define gene set ------------------------------------------------------#
-TISG <- c("OAS1", "SAMHD1", "OAS3", "OAS2", "STAT1", "XAF1", "RSAD2", "DDX60",
-          "IFI44", "PARP9", "HERC6", "MX1", "DTX3L", "IFI27", "B2M", "IFIT1", "PLSCR1")
-
-
-# Step 1: Query genes for all TISG symbols
-TISG_ensembl_all <- ensembldb::select(
-  EnsDb.Hsapiens.v86,
-  keys = TISG,
-  keytype = "SYMBOL",
-  columns = c("SYMBOL", "GENEID", "GENEBIOTYPE")
-)
-
-# Step 2: Get additional gene metadata including seqnames
-gene_metadata <- genes(
-  EnsDb.Hsapiens.v86,
-  filter = GeneIdFilter(TISG_ensembl_all$GENEID),
-  return.type = "data.frame"
-)
-
-# Step 3: Keep only genes on standard chromosomes (e.g., chr1–22, X, Y)
-standard_chr_genes <- gene_metadata %>%
-  filter(seq_name %in% c(as.character(1:22), "X", "Y"))
-
-# Step 4: Merge to get SYMBOLs and deduplicate
-TISG_ensembl_canonical <- TISG_ensembl_all %>%
-  semi_join(standard_chr_genes, by = c("GENEID" = "gene_id")) %>%
-  distinct(SYMBOL, .keep_all = TRUE)
-
-#--- 3. Run ssGSEA -----------------------------------------------------------#
-vst_matrix <- assay(vsd_treatment)
-custom_gene_set <- list(TISG = TISG_ensembl_canonical$GENEID)
-ssgsea_scores <- gsva(ssgseaParam(vst_matrix, custom_gene_set))
-
-#--- 4. Prepare metadata and plot data ---------------------------------------#
-plotdata <- cbind(coldata_treatments, t(ssgsea_scores)[rownames(coldata_treatments), , drop = FALSE])
-plotdata$treatment <- factor(plotdata$treatment, levels = c("CTR", "TAM", "ERD", "TE"))
-
-#--- 5. Statistics for annotation --------------------------------------------#
-comparisons <- list(c("CTR", "TAM"), c("CTR", "ERD"), c("ERD", "TE"), c("CTR", "TE"))
-names(comparisons) <- sapply(comparisons, function(x) paste(x, collapse = "_vs_"))
-
-p_values <- sapply(comparisons, function(x) {
-  t.test(plotdata[["TISG"]][plotdata$treatment == x[1]],
-         plotdata[["TISG"]][plotdata$treatment == x[2]], var.equal = FALSE)$p.value
-})
-
-p_adj_values <- p.adjust(p_values, method = "BH")
-
-signif_annotations <- sapply(p_adj_values, p_to_stars)
-y_positions <- c(1.0, 1.1, 1.2, 1.3)  # Matching order of comparisons
-
-#--- 6. Plot aesthetics ------------------------------------------------------#
-manual_colors <- c("CTR" = "#A0CBE8", "TAM" = "#F1CE63", "ERD" = "#8CD17D", "TE" = "#E15759")
-custom_labels <- c("CTR" = "DMSO", "TAM" = "4-OHT", "ERD" = "erdafitinib"
-,"TE" = "4-OHT + 
-erdafitinib")
-
-#--- 7. Plot generation ------------------------------------------------------#
-
-plot <- ggplot(plotdata, aes(x = treatment, y = TISG, fill = treatment)) +
-  ylim(0,1.5)+
-  geom_boxplot(outlier.shape = NA, color = "black", size = 0.2) +
-  geom_jitter(width = 0.2, size = 0.3, color = "black") +
-  geom_signif(comparisons = comparisons,
-              annotations = signif_annotations,
-              y_position = y_positions,
-              tip_length = 0.01,
-              vjust = 0,
-              textsize = 6 / 2.835,
-              map_signif_level = FALSE,
-              size = 0.2) +
-  scale_x_discrete(labels = custom_labels) +
-  scale_fill_manual(values = manual_colors) +
-  labs(x = NULL, y = "ssGSEA Enrichment Score", title = "TR-T47D") +
-  theme_bw() +
-  theme(
-    axis.text.x = element_text(angle = 30, vjust = 0.5, color = "black", size = 6),
-    axis.text.y = element_text(color = "black", size = 6),
-    axis.title.y = element_text(size = 6),
-    plot.title = element_text(size = 6, hjust = 0.5),
-    legend.position = "none",
-    plot.margin = unit(c(0.4, 0.2, 0.2, 0.4), "cm"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-  )
-
-#--- 8. Save ------------------------------------------------------------------#
-ggsave(filename = file.path(final_plotdir, "TR-T47D_all_treatments_ssGSEA_boxplot.pdf"),
-       plot = plot, width = 5.926, height = 5.5, units = "cm")
-
-
-
-
-############################################################
-###### Save csv for STRING analysis ####################
-############################################################
-# Define output file path
-output_file <- file.path(data.dir, "dgea_TE_ERD.csv")
-
-# Save the dataframe as CSV
-write.csv(dgea.list$dgea.TE.ERD, file = output_file, row.names = FALSE)
-
-
-############################################################
-###### Supplementary tables for all DGEA comparisons #######
-############################################################
-
-# Load required package
-library(openxlsx)
-
-# Define name mapping
-sheet_name_map <- c(
-  "dgea.TAM.CTR" = "4-OHT vs. Vehicle",
-  "dgea.ERD.CTR" = "Erdafitinib vs. Vehicle",
-  "dgea.TE.CTR"  = "4-OHT+Erd vs. Vehicle",
-  "dgea.TE.TAM"  = "4-OHT+Erd vs. 4-OHT",
-  "dgea.TE.ERD"  = "4-OHT+Erd vs. Erdafitinib",
-  "dgea.TAM.ERD" = "4-OHT vs. Erdafitinib"
-)
-
-# Create a new workbook
-wb <- createWorkbook()
-
-# Loop and write each DGEA result with sorting
-for (name in names(dgea.list)) {
-  sheet_label <- sheet_name_map[[name]]
-  dgea_table <- dgea.list[[name]] %>%
-    arrange(padj)  # sort by adjusted p-value
-  addWorksheet(wb, sheetName = sheet_label)
-  writeData(wb, sheet = sheet_label, x = dgea_table)
-}
-
-# Define output path
-output_path <- file.path(supp_tabledir, "TR-T47D_DGEA_results_all_comparisons.xlsx")
-
-# Save the workbook
-saveWorkbook(wb, file = output_path, overwrite = TRUE)
-
-# Confirmation
-cat("Workbook saved to:", output_path, "\n")
-
-#####################################################################
-###### Supplementary tables for all Hallmark GSEA comparisons #######
-#####################################################################
-
-# Define sheet name mapping
-gsea_sheet_map <- c(
-  "hallmark.TAM.CTR" = "4-OHT vs. Vehicle",
-  "hallmark.ERD.CTR" = "Erdafitinib vs. Vehicle",
-  "hallmark.TE.CTR"  = "4-OHT+Erd vs. Vehicle",
-  "hallmark.TE.TAM"  = "4-OHT+Erd vs. 4-OHT",
-  "hallmark.TE.ERD"  = "4-OHT+Erd vs. Erdafitinib",
-  "hallmark.TAM.ERD" = "4-OHT vs. Erdafitinib"
-)
-
-# Create a new workbook
-wb <- createWorkbook()
-
-# Loop through GSEA results and write to workbook
-for (name in names(gsea.list$HALLMARK)) {
-  sheet_label <- gsea_sheet_map[[name]]
-  gsea_table <- gsea.list$HALLMARK[[name]] %>%
-    arrange(padj)  # sort by adjusted p-value
-  addWorksheet(wb, sheetName = sheet_label)
-  writeData(wb, sheet = sheet_label, x = gsea_table)
-}
-
-# Define output path
-output_path <- file.path(supp_tabledir, "TR-T47D_HALLMARK_GSEA_results.xlsx")
-
-# Save the workbook
-saveWorkbook(wb, file = output_path, overwrite = TRUE)
-
-# Confirmation
-cat("Workbook saved to:", output_path, "\n")
-
-
-
 
