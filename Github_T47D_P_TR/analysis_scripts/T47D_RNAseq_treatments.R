@@ -11,11 +11,6 @@ library(dplyr)
 library(rlang)
 library(showtext)
 
-#Test
-
-#test
-
-
 # Load a Google font that supports Greek
 font_add_google("Roboto", "roboto")
 showtext_auto()
